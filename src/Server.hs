@@ -1,7 +1,6 @@
 module Server (mainLoop) where
 
 import Control.Concurrent (threadDelay)
-import Data.List
 import Data.Text (pack, strip, unpack)
 import System.Process
 import TData
@@ -9,24 +8,10 @@ import Text.Regex.TDFA ((=~))
 
 mainLoop :: String -> IO ()
 mainLoop csvFile = do
-  putStrLn "Hello, from server\n\n"
-
   info <- getInfoFromCSV csvFile
   window <- getActive
   clients <- getClients
-
-  print window
-  print clients
-
-  putStrLn "\n\n\n"
-
-  printInfo info
-  
-
-  let newInfo = updateClients clients "00:00:01" $ updateWindow window "00:00:01" info
-
-  setInfoToCSV csvFile newInfo
-
+  setInfoToCSV csvFile $ updateClients clients "00:00:01" $ updateWindow window "00:00:01" info
   threadDelay 1000000 -- uses microseconds
   mainLoop csvFile
 

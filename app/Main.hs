@@ -11,15 +11,14 @@ main = do
   args <- getArgs
   date <- getDate
   homeDir <- getHomeDirectory :: IO String
+
+  -- had verification that the cache dir exists
   let cacheDir = homeDir ++ "/.cache/hastrew" :: String
       dailyCacheDir = cacheDir ++ "/daily/" :: String
       csvFile = dailyCacheDir ++ date2string date ++ ".csv" :: String
 
-  if "--server" `elem` args 
+  if "--server" `elem` args
     then mainLoop csvFile
-    else if "--client" `elem` args 
-      then do
-        info <- getInfoFromCSV csvFile
-        printUsageSummary info
-      else 
-        putStrLn "No arguments provided"
+    else do
+      info <- getInfoFromCSV csvFile
+      printUsageSummary info

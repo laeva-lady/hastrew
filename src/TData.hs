@@ -12,13 +12,12 @@ module TData
   )
 where
 
-import System.Directory
 import Control.Monad (forM_)
 import Data.List (intercalate)
-import Data.Maybe (mapMaybe, fromMaybe)
-import Ytils 
+import Data.Maybe (fromMaybe, mapMaybe)
+import System.Directory
 import Text.Printf (printf)
-
+import Ytils
 
 data ProcessInfo = ProcessInfo
   { windowName :: String,
@@ -29,24 +28,30 @@ data ProcessInfo = ProcessInfo
 
 updateWindow :: String -> String -> [ProcessInfo] -> [ProcessInfo]
 updateWindow windowname activetimetoadd infos =
-  let (found, updated) = foldr
-        (\info (f, acc) ->
-            if windowName info == windowname
-              then (True, updateInfo info activetimetoadd "00:00:00" : acc)
-              else (f, info : acc)
-        ) (False, []) infos
+  let (found, updated) =
+        foldr
+          ( \info (f, acc) ->
+              if windowName info == windowname
+                then (True, updateInfo info activetimetoadd "00:00:00" : acc)
+                else (f, info : acc)
+          )
+          (False, [])
+          infos
    in if found
-         then updated
-         else ProcessInfo windowname "00:00:00" activetimetoadd : updated
+        then updated
+        else ProcessInfo windowname "00:00:00" activetimetoadd : updated
 
 updateClients :: [String] -> String -> [ProcessInfo] -> [ProcessInfo]
 updateClients clients usagetimetoadd infos =
-  let (updated, namesFound) = foldr
-        (\info (acc, seen) ->
-            if windowName info `elem` clients
-              then (updateInfo info "00:00:00" usagetimetoadd : acc, windowName info : seen)
-              else (info : acc, seen)
-        ) ([], []) infos
+  let (updated, namesFound) =
+        foldr
+          ( \info (acc, seen) ->
+              if windowName info `elem` clients
+                then (updateInfo info "00:00:00" usagetimetoadd : acc, windowName info : seen)
+                else (info : acc, seen)
+          )
+          ([], [])
+          infos
       -- Add new clients not already found
       newEntries = [ProcessInfo c usagetimetoadd "00:00:00" | c <- clients, c `notElem` namesFound]
    in updated ++ newEntries
@@ -57,17 +62,13 @@ updateInfo info activetimetoadd usagetimetoadd =
       newActiveTime = addTimes (activeTime info) activetimetoadd
    in ProcessInfo (windowName info) newTime newActiveTime
 
-
 setInfoToCSV :: String -> [ProcessInfo] -> IO ()
 setInfoToCSV pathtocsv info = do
-  let lines = intercalate "\n" $ map showInfo info
-  print lines
-  writeFile pathtocsv lines
+  writeFile pathtocsv $ intercalate "\n" $ map showInfo info
 
 getInfoFromCSV :: String -> IO [ProcessInfo]
 getInfoFromCSV pathtocsv = do
   exists <- doesFileExist pathtocsv
-  print exists
   if not exists
     then do
       writeFile pathtocsv ""
@@ -99,8 +100,9 @@ printInfo info = do
 
 printUsageSummary :: [ProcessInfo] -> IO ()
 printUsageSummary entries = do
-  let totalActive = diffTimeToStr $ sum $ map (\i -> fromMaybe 0 (parseTimeStr $ activeTime i)) entries :: String
-      totalUsage = diffTimeToStr $ sum $ map (\i -> fromMaybe 0 (parseTimeStr $ time i)) entries :: String
+  let sumTime func = diffTimeToStr . sum $ map (fromMaybe 0 . parseTimeStr . func) entries
+  let totalActive = sumTime activeTime
+      totalUsage = sumTime time
 
   putStrLn ""
   putStrLn $ "Today's Active Usage\t" ++ totalActive
